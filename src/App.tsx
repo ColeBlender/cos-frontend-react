@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import type { EmailData, ConnectionStatus, SSEMessage } from "./types";
 
 function App() {
-  const [emails, setEmails] = useState([]);
-  const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  const eventSourceRef = useRef(null);
+  const [emails, setEmails] = useState<EmailData[]>([]);
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("disconnected");
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
     // Connect to SSE endpoint
@@ -15,23 +17,23 @@ function App() {
       console.log("Connected to email stream");
     };
 
-    eventSource.onmessage = (event) => {
+    eventSource.onmessage = (event: MessageEvent) => {
       try {
-        const data = JSON.parse(event.data);
+        const data: SSEMessage = JSON.parse(event.data);
 
         if (data.type === "connected") {
           console.log("SSE connection established:", data.message);
-        } else if (data.type === "email") {
+        } else if (data.type === "email" && data.data) {
           // Add new email to the beginning of the list
-          setEmails((prevEmails) => [data.data, ...prevEmails]);
+          setEmails((prevEmails) => [data.data!, ...prevEmails]);
         }
       } catch (error) {
         console.error("Error parsing SSE message:", error);
       }
     };
 
-    eventSource.onerror = (error) => {
-      console.error("SSE error:", error);
+    eventSource.onerror = () => {
+      console.error("SSE error");
       setConnectionStatus("error");
       // Attempt to reconnect after a delay
       setTimeout(() => {
@@ -48,7 +50,7 @@ function App() {
     };
   }, []);
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     if (!dateString || dateString === "Unknown") return "Unknown";
     try {
       const date = new Date(dateString);
@@ -58,7 +60,7 @@ function App() {
     }
   };
 
-  const getStatusColor = () => {
+  const getStatusColor = (): string => {
     switch (connectionStatus) {
       case "connected":
         return "bg-green-500";
@@ -161,3 +163,4 @@ function App() {
 }
 
 export default App;
+
